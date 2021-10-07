@@ -12,6 +12,10 @@ ClearAll["`*"]
 PrivateHandler
 
 
+$Administrator
+
+
+AdminEvaluate
 WLEvaluate
 TeXEvaluate
 CallInt
@@ -38,6 +42,12 @@ OneBot`$MainHandler = PrivateHandler;
 (*Tool*)
 
 
+MessagePattern["admin"] = <|
+	"data" -> <|"text" -> s_String /; StringMatchQ[WhitespaceCharacter...~~"admin"~~Whitespace~~__]@s|>,
+	"type" -> "text"
+|>;
+
+
 MessagePattern["wl"] = <|
 	"data" -> <|"text" -> s_String /; StringMatchQ[WhitespaceCharacter...~~"wl"~~Whitespace~~__]@s|>,
 	"type" -> "text"
@@ -60,13 +70,18 @@ MessagePattern["int"] = <|
 (*Function*)
 
 
+AdminEvaluate[message_] := MessageTemplate["text"]@ToString[
+	ToExpression@First@StringCases[message[[-1]]["data", "text"], "admin"~~Whitespace~~e__~~WhitespaceCharacter...~~EndOfString :> e, 1]
+, InputForm] //OneBot`Utilities`ConstrainedEvaluate
+
+
 WLEvaluate[message_] := MessageTemplate["text"]@ToString[
 	OneBot`Utilities`AbsorbAbort@OneBot`Utilities`SafeToExpression@
 		First@StringCases[message[[-1]]["data", "text"], "wl"~~Whitespace~~e__~~WhitespaceCharacter...~~EndOfString :> e, 1]
 , InputForm] //OneBot`Utilities`ConstrainedEvaluate
 
 
-CallInt[{expr_, var_}] := MaTeX`MaTeX[
+CallInt[expr_, var_] := MaTeX`MaTeX[
 	RubiSteps`ShowIntSteps[Rubi`Int[expr, var], FormatType -> TeXForm]
 , Magnification -> 1.5]
 
@@ -74,7 +89,7 @@ CallInt[{expr_, var_}] := MaTeX`MaTeX[
 IntEvaluate[message_] := CallInt @@ OneBot`Utilities`AbsorbAbort@*OneBot`Utilities`SafeToExpression /@ StringCases[
 		message[[-1]]["data", "text"],
 		"int"~~Whitespace~~expr__~~Whitespace~~var:Except[WhitespaceCharacter]..~~WhitespaceCharacter...~~EndOfString :> {expr, var}
-	, 1][[1, 1]] //Switch[#,
+	, 1][[1]] //Switch[#,
 	_Graphics,
 		MessageTemplate["img"]@Rasterize[#, ImageResolution -> 200],
 	$Failed,
@@ -107,6 +122,10 @@ PrivateHandler[assoc_] := Module[{receive, messageType, message, messageID, self
 	, CharacterEncoding -> "UTF8"];
 	{messageType, message, messageID, selfID, senderID} = receive/@{"message_type", "message", "message_id", "self_id", "user_id"};
 	response = Switch[{messageType, message, senderID},
+		{"private", {MessagePattern["admin"]}, $Administrator},
+			ExportString[GenerateHTTPResponse@HTTPResponse[
+				ExportForm[{"reply" -> AdminEvaluate@message}, "JSON", "Compact" -> True]
+			, <|"StatusCode" -> 200|>], "HTTPResponse"],
 		{"private", {MessagePattern["wl"]}, _},
 			ExportString[GenerateHTTPResponse@HTTPResponse[
 				ExportForm[{"reply" -> WLEvaluate@message}, "JSON", "Compact" -> True]
@@ -126,6 +145,10 @@ PrivateHandler[assoc_] := Module[{receive, messageType, message, messageID, self
 		{"group", {MessagePattern["at"]@selfID, MessagePattern["tex"]}, _},
 			ExportString[GenerateHTTPResponse@HTTPResponse[
 				ExportForm[{"reply" -> {MessageTemplate["reply"]@messageID, TeXEvaluate@message}}, "JSON", "Compact" -> True]
+			, <|"StatusCode" -> 200|>], "HTTPResponse"],
+		{"group", {MessagePattern["at"]@selfID, MessagePattern["int"]}, _},
+			ExportString[GenerateHTTPResponse@HTTPResponse[
+				ExportForm[{"reply" -> {MessageTemplate["reply"]@messageID, IntEvaluate@message}}, "JSON", "Compact" -> True]
 			, <|"StatusCode" -> 200|>], "HTTPResponse"],
 		_,
 			ExportString[HTTPResponse["", <|"StatusCode" -> 204|>], "HTTPResponse"]
