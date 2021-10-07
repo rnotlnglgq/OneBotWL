@@ -1,6 +1,6 @@
 (* ::Package:: *)
 
-Begin["OneBot`UserService`"]
+BeginPackage["OneBot`UserService`"]
 
 
 ClearAll["`*"]
@@ -11,7 +11,7 @@ WLEvaluate
 TeXEvaluate
 
 
-$Debug = False;
+$Debug = True;
 
 
 Begin["`Private`"]
@@ -33,10 +33,6 @@ OneBot`$MainHandler = PrivateHandler;
 
 (* ::Section:: *)
 (*\:7528\:6237\:670d\:52a1*)
-
-
-(* ::Section:: *)
-(*\:4e3b*)
 
 
 WLEvaluate[message_] := MessageTemplate["text"]@ToString[
