@@ -67,8 +67,9 @@ $DefaultOneBotWLPort = 5701;
 
 
 StartListen[HoldPattern@OptionsPattern@{"Domain" -> $DefaultOneBotWLDomain, "Port" -> $DefaultOneBotWLPort}] := $Listener = SocketListen[
-	StringTemplate["``:``"][OptionValue@"Domain", OptionValue@"Port"]
-, $MainHandler]
+	StringTemplate["``:``"][OptionValue@"Domain", OptionValue@"Port"], 
+	$MainHandler
+, HandlerFunctionsKeys -> {"SourceSocket", "DataByteArray", "TimeStamp"}]
 
 
 StopListen[] := $Listener/@{"Socket", "SourceSocket"} //(
@@ -95,11 +96,11 @@ SendGroupMessage[gid_, msg_] := CallOneBot["send_group_msg", {"group_id" -> gid,
 (*Parse*)
 
 
-ReverseEscapeUnicode = StringReplace["\\u"~~u:(HexadecimalCharacter~~HexadecimalCharacter) :> Interpreter["HexInteger"]@u];
-
-
 (* ::Text:: *)
 (*Note: CQCode is currently not in use.*)
+
+
+ReverseEscapeUnicode = FromCharacterCode@*Interpreter["HexInteger"]@*StringReplace["\\u"~~u:(Repeated[HexadecimalCharacter,{4}]) :> u];
 
 
 ReverseEscapeCQCode = StringReplace[{"&#91;"->"[", "&#93;"->"]", "&amp;"->"&", "&#44;" -> ","}];

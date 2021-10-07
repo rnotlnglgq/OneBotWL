@@ -117,7 +117,7 @@ TeXEvaluate[message_] := Switch[#,
 
 PrivateHandler[assoc_] := Module[{receive, messageType, message, messageID, selfID, senderID, response},
 	receive = ImportByteArray[
-		ByteArray@ImportString[#Data,"HTTPRequest"]@"BodyBytes",
+		ImportByteArray[#DataByteArray,"HTTPRequest"]@"BodyByteArray",
 		"RawJSON"
 	, CharacterEncoding -> "UTF8"];
 	{messageType, message, messageID, selfID, senderID} = receive/@{"message_type", "message", "message_id", "self_id", "user_id"};
