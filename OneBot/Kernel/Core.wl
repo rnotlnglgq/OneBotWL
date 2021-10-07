@@ -10,7 +10,8 @@ BeginPackage["OneBot`", {"GeneralUtilities`", "ZeroMQLink`", "CURLLink`"}]
 ClearAll["`*"]
 
 
-$debug
+$Listener
+$MainHandler
 
 
 $DefaultOneBotDomain

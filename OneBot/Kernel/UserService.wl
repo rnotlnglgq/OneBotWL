@@ -90,4 +90,4 @@ PrivateHandler[assoc_] := Module[{receive, messageType, message, messageID, self
 End[]
 
 
-End[]
+EndPackage[]
