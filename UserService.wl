@@ -1,14 +1,21 @@
 (* ::Package:: *)
 
-BeginPackage["OneBot`UserService`"]
+BeginPackage["OneBot`UserService`", {"OneBot`", "Rubi`", "MaTeX`"}]
+
+
+<<RubiSteps.wl
 
 
 ClearAll["`*"]
 
 
 PrivateHandler
+
+
 WLEvaluate
 TeXEvaluate
+CallInt
+IntEvaluate
 
 
 $Debug = True;
@@ -20,25 +27,61 @@ Begin["`Private`"]
 ClearAll["`*"]
 
 
-(* ::Chapter:: *)
-(*\:670d\:52a1*)
-
-
 (* ::Section:: *)
-(*\:6838\:5fc3\:670d\:52a1*)
+(*Dispatch*)
 
 
 OneBot`$MainHandler = PrivateHandler;
 
 
 (* ::Section:: *)
-(*\:7528\:6237\:670d\:52a1*)
+(*Tool*)
+
+
+MessagePattern["wl"] = <|
+	"data" -> <|"text" -> s_String /; StringMatchQ[WhitespaceCharacter...~~"wl"~~Whitespace~~__]@s|>,
+	"type" -> "text"
+|>;
+
+
+MessagePattern["tex"] = <|
+	"data" -> <|"text" -> s_String /; StringMatchQ[WhitespaceCharacter...~~"tex"~~Whitespace~~__]@s|>,
+	"type" -> "text"
+|>;
+
+
+MessagePattern["int"] = <|
+	"data" -> <|"text" -> s_String /; StringMatchQ[WhitespaceCharacter...~~"int"~~Whitespace~~__~~Whitespace~~Except[WhitespaceCharacter]..]@s|>,
+	"type" -> "text"
+|>;
+
+
+(* ::Section:: *)
+(*Function*)
 
 
 WLEvaluate[message_] := MessageTemplate["text"]@ToString[
-	OneBot`Utilities`ConstrainedEvaluate@OneBot`Utilities`AbsorbAbort@OneBot`Utilities`SafeToExpression@
+	OneBot`Utilities`AbsorbAbort@OneBot`Utilities`SafeToExpression@
 		First@StringCases[message[[-1]]["data", "text"], "wl"~~Whitespace~~e__~~WhitespaceCharacter...~~EndOfString :> e, 1]
-, InputForm]
+, InputForm] //OneBot`Utilities`ConstrainedEvaluate
+
+
+CallInt[{expr_, var_}] := MaTeX`MaTeX[
+	RubiSteps`ShowIntSteps[Rubi`Int[expr, var], FormatType -> TeXForm]
+, Magnification -> 1.5]
+
+
+IntEvaluate[message_] := CallInt @@ OneBot`Utilities`AbsorbAbort@*OneBot`Utilities`SafeToExpression /@ StringCases[
+		message[[-1]]["data", "text"],
+		"int"~~Whitespace~~expr__~~Whitespace~~var:Except[WhitespaceCharacter]..~~WhitespaceCharacter...~~EndOfString :> {expr, var}
+	, 1][[1, 1]] //Switch[#,
+	_Graphics,
+		MessageTemplate["img"]@Rasterize[#, ImageResolution -> 200],
+	$Failed,
+		MessageTemplate["text"]@Failure["MaTeXFailure", <||>],
+	_,
+		MessageTemplate["text"]@Failure["UnexpectedFailure", <||>]
+]& //OneBot`Utilities`ConstrainedEvaluate
 
 
 TeXEvaluate[message_] := Switch[#,
@@ -51,6 +94,10 @@ TeXEvaluate[message_] := Switch[#,
 ]&@MaTeX`MaTeX[
 	First@StringCases[message[[-1]]["data", "text"], "tex"~~Whitespace~~e__~~WhitespaceCharacter...~~EndOfString :> e, 1]
 , Magnification -> 1.5] //OneBot`Utilities`ConstrainedEvaluate
+
+
+(* ::Section:: *)
+(*Handler*)
 
 
 PrivateHandler[assoc_] := Module[{receive, messageType, message, messageID, selfID, senderID, response},
@@ -67,6 +114,10 @@ PrivateHandler[assoc_] := Module[{receive, messageType, message, messageID, self
 		{"private", {MessagePattern["tex"]}, _},
 			ExportString[GenerateHTTPResponse@HTTPResponse[
 				ExportForm[{"reply" -> TeXEvaluate@message}, "JSON", "Compact" -> True]
+			, <|"StatusCode" -> 200|>], "HTTPResponse"],
+		{"private", {MessagePattern["int"]}, _},
+			ExportString[GenerateHTTPResponse@HTTPResponse[
+				ExportForm[{"reply" -> IntEvaluate@message}, "JSON", "Compact" -> True]
 			, <|"StatusCode" -> 200|>], "HTTPResponse"],
 		{"group", {MessagePattern["at"]@selfID, MessagePattern["wl"]}, _},
 			ExportString[GenerateHTTPResponse@HTTPResponse[
@@ -85,6 +136,10 @@ PrivateHandler[assoc_] := Module[{receive, messageType, message, messageID, self
 	WriteString[#SourceSocket, response];
 	Close@#SourceSocket;
 ]&@assoc;
+
+
+(* ::Section:: *)
+(*End*)
 
 
 End[]

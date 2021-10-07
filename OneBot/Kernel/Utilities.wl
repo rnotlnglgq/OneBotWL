@@ -3,6 +3,9 @@
 Begin["OneBot`Utilities`"]
 
 
+Needs@"GeneralUtilities`"
+
+
 $ThreadMemoryLimit = 1*^8;
 $ThreadTimeLimit = 10;
 
@@ -65,8 +68,8 @@ SetAttributes[OneBot`Utilities`AbsorbAbort, HoldAllComplete]
 OneBot`Utilities`ConstrainedEvaluate[expr_] := MemoryConstrained[
 	TimeConstrained[
 		expr
-	, $ThreadTimeLimit, OneBot`MessageTemplate["text"]@Failure["OutOfTime", <||>]]
-, $ThreadMemoryLimit, OneBot`MessageTemplate["text"]@Failure["OutOfMemory", <||>]]
+	, OneBot`Utilities`$ThreadTimeLimit, OneBot`MessageTemplate["text"]@Failure["OutOfTime", <||>]]
+, OneBot`Utilities`$ThreadMemoryLimit, OneBot`MessageTemplate["text"]@Failure["OutOfMemory", <||>]]
 
 SetAttributes[OneBot`Utilities`ConstrainedEvaluate, HoldAllComplete]
 

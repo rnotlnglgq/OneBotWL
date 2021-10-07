@@ -1,6 +1,8 @@
 #!/usr/bin/env wolframscript
 (* ::Package:: *)
-CreatePacletArchive@"OneBot"
 
+paclet = CreatePacletArchive@"OneBot"
 
-PacletInstall[%,ForceVersionInstall->True]
+PacletInstall[paclet, ForceVersionInstall -> True] //Print
+
+Pause[.5]

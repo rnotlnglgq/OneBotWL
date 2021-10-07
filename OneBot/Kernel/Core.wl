@@ -116,18 +116,6 @@ MessagePattern["at"][qq_String] := <|
 MessagePattern["at"][qq_Integer] := MessagePattern["at"][IntegerString@qq]
 
 
-MessagePattern["wl"] = <|
-	"data" -> <|"text" -> s_String /; StringMatchQ[WhitespaceCharacter...~~"wl"~~Whitespace~~__]@s|>,
-	"type" -> "text"
-|>;
-
-
-MessagePattern["tex"] = <|
-	"data" -> <|"text" -> s_String /; StringMatchQ[WhitespaceCharacter...~~"tex"~~Whitespace~~__]@s|>,
-	"type" -> "text"
-|>;
-
-
 (* ::Section:: *)
 (*Template*)
 
