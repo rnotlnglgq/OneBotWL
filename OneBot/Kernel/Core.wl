@@ -69,7 +69,7 @@ $DefaultOneBotWLPort = 5701;
 StartListen[HoldPattern@OptionsPattern@{"Domain" -> $DefaultOneBotWLDomain, "Port" -> $DefaultOneBotWLPort}] := $Listener = SocketListen[
 	StringTemplate["``:``"][OptionValue@"Domain", OptionValue@"Port"], 
 	$MainHandler
-, HandlerFunctionsKeys -> {"SourceSocket", "DataByteArray", "TimeStamp"}]
+, HandlerFunctionsKeys -> {"SourceSocket", "DataByteArray", "Timestamp"}]
 
 
 StopListen[] := $Listener/@{"Socket", "SourceSocket"} //(

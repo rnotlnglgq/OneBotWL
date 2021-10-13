@@ -12,6 +12,10 @@ ClearAll["`*"]
 PrivateHandler
 
 
+QuickReplyResponse
+$NoActionResponse
+
+
 $Administrator
 
 
@@ -72,7 +76,7 @@ MessagePattern["int"] = <|
 
 AdminEvaluate[message_] := MessageTemplate["text"]@ToString[
 	ToExpression@First@StringCases[message[[-1]]["data", "text"], "admin"~~Whitespace~~e__~~WhitespaceCharacter...~~EndOfString :> e, 1]
-, InputForm] //OneBot`Utilities`ConstrainedEvaluate
+, InputForm]
 
 
 WLEvaluate[message_] := MessageTemplate["text"]@ToString[
@@ -115,6 +119,18 @@ TeXEvaluate[message_] := Switch[#,
 (*Handler*)
 
 
+QuickReplyResponse[handler_, sourceMsg_] := ExportString[GenerateHTTPResponse@HTTPResponse[
+	ExportForm[{"reply" -> handler@sourceMsg}, "JSON", "Compact" -> True]
+, <|"StatusCode" -> 200|>], "HTTPResponse"]
+
+QuickReplyResponse[handler_, sourceMsg_, sourceMsgID_] := ExportString[GenerateHTTPResponse@HTTPResponse[
+	ExportForm[{"reply" -> {MessageTemplate["reply"]@sourceMsgID, handler@sourceMsg}}, "JSON", "Compact" -> True]
+, <|"StatusCode" -> 200|>], "HTTPResponse"]
+
+
+$NoActionResponse = ExportString[HTTPResponse["", <|"StatusCode" -> 204|>], "HTTPResponse"];
+
+
 PrivateHandler[assoc_] := Module[{receive, messageType, message, messageID, selfID, senderID, response},
 	receive = ImportByteArray[
 		ImportByteArray[#DataByteArray,"HTTPRequest"]@"BodyByteArray",
@@ -123,35 +139,23 @@ PrivateHandler[assoc_] := Module[{receive, messageType, message, messageID, self
 	{messageType, message, messageID, selfID, senderID} = receive/@{"message_type", "message", "message_id", "self_id", "user_id"};
 	response = Switch[{messageType, message, senderID},
 		{"private", {MessagePattern["admin"]}, $Administrator},
-			ExportString[GenerateHTTPResponse@HTTPResponse[
-				ExportForm[{"reply" -> AdminEvaluate@message}, "JSON", "Compact" -> True]
-			, <|"StatusCode" -> 200|>], "HTTPResponse"],
+			QuickReplyResponse[AdminEvaluate, message],
 		{"private", {MessagePattern["wl"]}, _},
-			ExportString[GenerateHTTPResponse@HTTPResponse[
-				ExportForm[{"reply" -> WLEvaluate@message}, "JSON", "Compact" -> True]
-			, <|"StatusCode" -> 200|>], "HTTPResponse"],
+			QuickReplyResponse[WLEvaluate, message],
 		{"private", {MessagePattern["tex"]}, _},
-			ExportString[GenerateHTTPResponse@HTTPResponse[
-				ExportForm[{"reply" -> TeXEvaluate@message}, "JSON", "Compact" -> True]
-			, <|"StatusCode" -> 200|>], "HTTPResponse"],
+			QuickReplyResponse[TeXEvaluate, message],
 		{"private", {MessagePattern["int"]}, _},
-			ExportString[GenerateHTTPResponse@HTTPResponse[
-				ExportForm[{"reply" -> IntEvaluate@message}, "JSON", "Compact" -> True]
-			, <|"StatusCode" -> 200|>], "HTTPResponse"],
+			QuickReplyResponse[IntEvaluate, message],
+		{"group", {MessagePattern["at"]@selfID, MessagePattern["admin"]}, _},
+			QuickReplyResponse[AdminEvaluate, message, messageID],
 		{"group", {MessagePattern["at"]@selfID, MessagePattern["wl"]}, _},
-			ExportString[GenerateHTTPResponse@HTTPResponse[
-				ExportForm[{"reply" -> {MessageTemplate["reply"]@messageID, WLEvaluate@message}}, "JSON", "Compact" -> True]
-			, <|"StatusCode" -> 200|>], "HTTPResponse"],
+			QuickReplyResponse[WLEvaluate, message, messageID],
 		{"group", {MessagePattern["at"]@selfID, MessagePattern["tex"]}, _},
-			ExportString[GenerateHTTPResponse@HTTPResponse[
-				ExportForm[{"reply" -> {MessageTemplate["reply"]@messageID, TeXEvaluate@message}}, "JSON", "Compact" -> True]
-			, <|"StatusCode" -> 200|>], "HTTPResponse"],
+			QuickReplyResponse[TeXEvaluate, message, messageID],
 		{"group", {MessagePattern["at"]@selfID, MessagePattern["int"]}, _},
-			ExportString[GenerateHTTPResponse@HTTPResponse[
-				ExportForm[{"reply" -> {MessageTemplate["reply"]@messageID, IntEvaluate@message}}, "JSON", "Compact" -> True]
-			, <|"StatusCode" -> 200|>], "HTTPResponse"],
+			QuickReplyResponse[IntEvaluate, message, messageID],
 		_,
-			ExportString[HTTPResponse["", <|"StatusCode" -> 204|>], "HTTPResponse"]
+			$NoActionResponse
 	];
 	If[TrueQ@$Debug,
 		Print@ToString[message, InputForm]
