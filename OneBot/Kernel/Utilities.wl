@@ -3,9 +3,6 @@
 Begin["OneBot`Utilities`"]
 
 
-Needs@"GeneralUtilities`"
-
-
 $ThreadMemoryLimit = 1*^8;
 $ThreadTimeLimit = 10;
 
@@ -14,7 +11,7 @@ Begin["`Private`"]
 
 
 OneBot`Utilities`SafeEvaluate[expr_] := If[
-	FreeQ[HoldComplete@expr, _Symbol?OneBot`Utilities`SideEffectSymbolQ, {1, Infinity}],
+	FreeQ[HoldComplete@expr, Except@_Symbol?OneBot`Utilities`SafeSymbolQ, {1, Infinity}],
 	expr,
 	Failure["Unsafe", <||>]
 ];
@@ -22,19 +19,34 @@ OneBot`Utilities`SafeEvaluate[expr_] := If[
 SetAttributes[OneBot`Utilities`SafeEvaluate, HoldAllComplete]
 
 
-OneBot`Utilities`SideEffectSymbolQ[sym_Symbol] := If[OneBot`Utilities`ValueQWithAutoLoad@sym,
-	True,
-	Or[
-		MemberQ[GeneralUtilities`$SideEffectfulFunctions, SymbolName@Unevaluated@sym],
-		StringMatchQ["OneBot`"~~___]@Context@sym
+OneBot`Utilities`$SystemSymbols = First@*StringReplace[{StartOfString~~s__~~";"~~EndOfString :> False -> s, s__ :> True -> s}] /@ StringSplit[
+	Import["SystemSymbol.wl", "String"]
+, "\r\n"|"\n"] //Merge[Identity];
+
+
+{OneBot`Utilities`$SystemWhiteList, OneBot`Utilities`$SystemBlackList} = OneBot`Utilities`$SystemSymbols /@ {True, False};
+
+
+OneBot`Utilities`$ContextWhiteList = {};
+
+
+OneBot`Utilities`SafeSymbolQ[sym_Symbol] := If[OneBot`Utilities`ValueQWithAutoLoad@sym,
+	False,
+	If[MemberQ[OneBot`Utilities`$ContextWhiteList]@Context@sym,
+		True,
+		If[Context@sym === "System`",
+			MemberQ[SymbolName@Unevaluated@sym]@OneBot`Utilities`$SystemWhiteList,
+			False
+		]
 	]
 ];
 
-OneBot`Utilities`SideEffectSymbolQ[str_String] := ToExpression[str, InputForm, OneBot`Utilities`SideEffectSymbolQ]
+OneBot`Utilities`SafeSymbolQ[str_String] := ToExpression[str, InputForm, OneBot`Utilities`SafeSymbolQ]
 
-OneBot`Utilities`SideEffectSymbolQ[_] := False
+(* Should introduce error here. *)
+OneBot`Utilities`SafeSymbolQ[_] := False
 
-SetAttributes[OneBot`Utilities`SideEffectSymbolQ, HoldAllComplete]
+SetAttributes[OneBot`Utilities`SafeSymbolQ, HoldAllComplete]
 
 
 OneBot`Utilities`ValueQWithAutoLoad[sym_] := If[ValueQ[sym],
