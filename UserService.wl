@@ -148,6 +148,7 @@ help: \:663e\:793a\:5e2e\:52a9
 wl expr_: \:8ba1\:7b97Wolfram\:8bed\:8a00\:8868\:8fbe\:5f0fexpr
 int expr_ sym_: \:5bf9Wolfram\:8bed\:8a00\:8868\:8fbe\:5f0fexpr\:5173\:4e8eWolfram\:8bed\:8a00\:7b26\:53f7sym\:6c42\:53cd\:5bfc\:6570
 tex formula_: \:6e32\:67d3TeX\:516c\:5f0fformula
+fig expr_: allow image output.
 
 \:6ce8\:610f\:4e8b\:9879\:ff1a
 1. Wolfram\:8bed\:8a00\:8868\:8fbe\:5f0f\:4e0d\:652f\:6301\:81ea\:7136\:8bed\:8a00\:8f93\:5165\:548c\:6709\:6b67\:4e49\:7684TraditionalForm\:3002
@@ -159,6 +160,7 @@ tex formula_: \:6e32\:67d3TeX\:516c\:5f0fformula
 @XXX wl 
 @XXX int 1/(1+x^6) x
 @XXX tex \\frac{2}{3}
+@XXX fig Graphics@Circle[]
 "
 
 

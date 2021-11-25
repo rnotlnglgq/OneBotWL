@@ -30,7 +30,7 @@ OneBot`Utilities`$SystemSymbols = First@*StringReplace[{StartOfString~~s__~~";"~
 OneBot`Utilities`$ContextWhiteList = {};
 
 
-OneBot`Utilities`SafeSymbolQ[sym_Symbol] := If[OneBot`Utilities`ValueQWithAutoLoad@sym,
+OneBot`Utilities`SafeSymbolQ[sym_Symbol] := Catch@StackBegin@If[OneBot`Utilities`ValueQWithAutoLoad@sym,
 	False,
 	If[MemberQ[OneBot`Utilities`$ContextWhiteList]@Context@sym,
 		True,
