@@ -24,6 +24,7 @@ WLEvaluate
 TeXEvaluate
 CallInt
 IntEvaluate
+FigureEvaluate
 
 
 Begin["`Private`"]
@@ -32,7 +33,7 @@ Begin["`Private`"]
 $debug = True;
 
 
-OneBot`Utilities`$ContextWhiteList = {"Rubi`"}
+OneBot`Utilities`$ContextWhiteList = {"Rubi`"};
 
 
 ClearAll["`*"]
@@ -118,7 +119,7 @@ IntEvaluate[message_] := CallInt @@ OneBot`Utilities`AbsorbAbort@*OneBot`Utiliti
 ]& //OneBot`Utilities`ConstrainedEvaluate
 
 
-FigureEvaluate[message_] := First@StringCases[message[[-1]]["data", "text"], "wl"~~Whitespace~~e__~~WhitespaceCharacter...~~EndOfString :> e, 1] \
+FigureEvaluate[message_] := First@StringCases[message[[-1]]["data", "text"], "fig"~~Whitespace~~e__~~WhitespaceCharacter...~~EndOfString :> e, 1] \
 	//OneBot`Utilities`SafeToExpression //OneBot`Utilities`AbsorbAbort //Switch[#,
 	_Graphics|_Graphics3D|_Image,
 		MessageTemplate["img"]@Rasterize[#, ImageResolution -> 200],
@@ -157,7 +158,7 @@ tex formula_: \:6e32\:67d3TeX\:516c\:5f0fformula
 @XXX help
 @XXX wl 
 @XXX int 1/(1+x^6) x
-@XXX tex \frac{2}{3}
+@XXX tex \\frac{2}{3}
 "
 
 
@@ -194,7 +195,7 @@ PrivateHandler[assoc_] := Module[{receive, messageType, message, messageID, self
 			QuickReplyResponse[TeXEvaluate, message],
 		{"private", {MessagePattern["int"]}, _},
 			QuickReplyResponse[IntEvaluate, message],
-		{"private", {MessagePattern["fig"]}},
+		{"private", {MessagePattern["fig"]}, _},
 			QuickReplyResponse[FigureEvaluate, message],
 		{"group", {MessagePattern["at"]@selfID, MessagePattern["help"]}, _},
 			QuickReplyResponse[$HelpMessage&, message],

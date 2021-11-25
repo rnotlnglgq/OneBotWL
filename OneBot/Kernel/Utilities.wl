@@ -11,7 +11,7 @@ Begin["`Private`"]
 
 
 OneBot`Utilities`SafeEvaluate[expr_] := If[
-	FreeQ[HoldComplete@expr, Except@_Symbol?OneBot`Utilities`SafeSymbolQ, {1, Infinity}],
+	FreeQ[HoldComplete@expr, _Symbol?(Not@*OneBot`Utilities`SafeSymbolQ), {1, Infinity}],
 	expr,
 	Failure["Unsafe", <||>]
 ];
