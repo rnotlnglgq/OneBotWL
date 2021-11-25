@@ -30,7 +30,7 @@ OneBot`Utilities`SafeToExpression[str_] := OneBot`Utilities`EvaluateInTemporaryC
 
 
 OneBot`Utilities`EvaluateInTemporaryContext[expr_] := Block[{$Context = "Global`", $ContextPath = Prepend["System`"]@OneBot`Utilities`$ContextWhiteList},
-	Remove/@Names@"Global`*";
+	ClearAll/@Names@"Global`*";
 	expr
 ]
 
