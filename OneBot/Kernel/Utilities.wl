@@ -29,13 +29,12 @@ OneBot`Utilities`SafeToExpression[str_] := OneBot`Utilities`EvaluateInTemporaryC
 , $Aborted];
 
 
-OneBot`Utilities`EvaluateInTemporaryContext[expr_] := Module[{$context, $result},
+OneBot`Utilities`EvaluateInTemporaryContext[expr_] := Module[{$context},
 	$context = StringDelete["-"]@CreateUUID["OneBot`Utilities`Temporary$"]<>"`";
-	BeginPackage[$context, OneBot`Utilities`$ContextWhiteList];
-	Remove[$context~~__];
-	$result = expr;
-	EndPackage[];
-	$result
+	Block[{$Context = $context, $ContextPath = Prepend["System`"]@OneBot`Utilities`$ContextWhiteList},
+		Remove/@Names[$context<>"*"];
+		expr
+	]
 ]
 
 SetAttributes[OneBot`Utilities`EvaluateInTemporaryContext, HoldAllComplete]
@@ -54,9 +53,12 @@ OneBot`Utilities`SafeSymbolQ[sym_Symbol] := If[OneBot`Utilities`ValueQWithAutoLo
 	False,
 	If[MemberQ[Context@sym]@OneBot`Utilities`$ContextWhiteList || MemberQ[sym]@OneBot`Utilities`$UserSymbolWhiteList,
 		True,
-		If[Context@sym === "System`" || StringMatchQ["OneBot`Utilities`Temporary$"~~__]@Context@sym,
-			MemberQ[SymbolName@Unevaluated@sym]@OneBot`Utilities`$SystemWhiteList,
-			False
+		If[StringMatchQ["OneBot`Utilities`Temporary$"~~__]@Context@sym,
+			True,
+			If[Context@sym === "System`",
+				MemberQ[SymbolName@Unevaluated@sym]@OneBot`Utilities`$SystemWhiteList,
+				False
+			]
 		]
 	]
 ];
