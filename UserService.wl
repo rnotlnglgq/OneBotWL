@@ -96,7 +96,7 @@ AdminEvaluate[message_] := MessageTemplate["text"]@ToString[
 
 
 WLEvaluate[message_] := MessageTemplate["text"]@ToString[
-	OneBot`Utilities`AbsorbAbort@OneBot`Utilities`SafeToExpression@
+	OneBot`Utilities`SafeToExpression@
 		First@StringCases[message[[-1]]["data", "text"], "wl"~~Whitespace~~e__~~WhitespaceCharacter...~~EndOfString :> e, 1]
 , InputForm] //OneBot`Utilities`ConstrainedEvaluate
 
@@ -106,7 +106,7 @@ CallInt[expr_, var_] := MaTeX`MaTeX[
 , Magnification -> 1.5]
 
 
-IntEvaluate[message_] := CallInt @@ OneBot`Utilities`AbsorbAbort@*OneBot`Utilities`SafeToExpression /@ StringCases[
+IntEvaluate[message_] := CallInt @@ OneBot`Utilities`SafeToExpression /@ StringCases[
 		message[[-1]]["data", "text"],
 		"int"~~Whitespace~~expr__~~Whitespace~~var:Except[WhitespaceCharacter]..~~WhitespaceCharacter...~~EndOfString :> {expr, var}
 	, 1][[1]] //Switch[#,
@@ -120,7 +120,7 @@ IntEvaluate[message_] := CallInt @@ OneBot`Utilities`AbsorbAbort@*OneBot`Utiliti
 
 
 FigureEvaluate[message_] := First@StringCases[message[[-1]]["data", "text"], "fig"~~Whitespace~~e__~~WhitespaceCharacter...~~EndOfString :> e, 1] \
-	//OneBot`Utilities`SafeToExpression //OneBot`Utilities`AbsorbAbort //Switch[#,
+	//OneBot`Utilities`SafeToExpression //Switch[#,
 	_Graphics|_Graphics3D|_Image,
 		MessageTemplate["img"]@Rasterize[#, ImageResolution -> 200],
 	_Failure,
