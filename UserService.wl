@@ -72,7 +72,7 @@ MessagePattern["int"] = <|
 
 AdminEvaluate[message_] := MessageTemplate["text"]@ToString[
 	ToExpression@First@StringCases[message[[-1]]["data", "text"], "admin"~~Whitespace~~e__~~WhitespaceCharacter...~~EndOfString :> e, 1]
-, InputForm] //OneBot`Utilities`ConstrainedEvaluate
+, InputForm]
 
 
 WLEvaluate[message_] := MessageTemplate["text"]@ToString[
@@ -149,6 +149,10 @@ PrivateHandler[assoc_] := Module[{receive, messageType, message, messageID, self
 		{"group", {MessagePattern["at"]@selfID, MessagePattern["int"]}, _},
 			ExportString[GenerateHTTPResponse@HTTPResponse[
 				ExportForm[{"reply" -> {MessageTemplate["reply"]@messageID, IntEvaluate@message}}, "JSON", "Compact" -> True]
+			, <|"StatusCode" -> 200|>], "HTTPResponse"],
+		{"group", {MessagePattern["at"]@selfID, MessagePattern["admin"]}, $Administrator},
+			ExportString[GenerateHTTPResponse@HTTPResponse[
+				ExportForm[{"reply" -> {MessageTemplate["reply"]@messageID, AdminEvaluate@message}}, "JSON", "Compact" -> True]
 			, <|"StatusCode" -> 200|>], "HTTPResponse"],
 		_,
 			ExportString[HTTPResponse["", <|"StatusCode" -> 204|>], "HTTPResponse"]
