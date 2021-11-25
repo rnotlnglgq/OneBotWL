@@ -33,7 +33,8 @@ Begin["`Private`"]
 $debug = True;
 
 
-OneBot`Utilities`$ContextWhiteList = {"Rubi`"};
+OneBot`Utilities`$ContextWhiteList = {"Global`", "Rubi`"};
+OneBot`Utilities`$UserSymbolWhiteList = {MaTeX`MaTeX};
 
 
 ClearAll["`*"]
