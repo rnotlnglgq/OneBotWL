@@ -101,9 +101,14 @@ WLEvaluate[message_] := MessageTemplate["text"]@ToString[
 , InputForm] //OneBot`Utilities`ConstrainedEvaluate
 
 
+MaTeX`MaTeX[
+	"\\text{\:597d\:ff0c\:975e\:5e38\:597d}"
+, Magnification -> 1.5, "Preamble" -> {"\\usepackage[unicode]{ctex}"}]
+
+
 CallInt[expr_, var_] := MaTeX`MaTeX[
 	RubiSteps`ShowIntSteps[Rubi`Int[expr, var], FormatType -> TeXForm]
-, Magnification -> 1.5]
+, Magnification -> 1.5, "Preamble" -> {"\\usepackage{ctex}"}]
 
 
 IntEvaluate[message_] := CallInt @@ OneBot`Utilities`AbsorbAbort@*OneBot`Utilities`SafeToExpression /@ StringCases[

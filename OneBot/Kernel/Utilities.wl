@@ -7,7 +7,38 @@ $ThreadMemoryLimit = 1*^8;
 $ThreadTimeLimit = 10;
 
 
+$ContextWhiteList = {};
+
+
+$SystemSymbols = First@*StringReplace[{StartOfString~~s__~~";"~~EndOfString :> False -> s, s__ :> True -> s}] /@ StringSplit[
+	Import["SystemSymbol.wl", "String"]
+, "\r\n"|"\n"] //Merge[Identity];
+
+
+{$SystemWhiteList, $SystemBlackList} = OneBot`Utilities`$SystemSymbols /@ {True, False};
+
+
+OneBot`Utilities`$UserSymbolWhiteList = {};
+
+
 Begin["`Private`"]
+
+
+OneBot`Utilities`SafeToExpression[str_] := OneBot`Utilities`EvaluateInTemporaryContext@Catch@CheckAbort[
+	StackBegin@ToExpression[str, InputForm, OneBot`Utilities`SafeEvaluate]
+, $Aborted];
+
+
+OneBot`Utilities`EvaluateInTemporaryContext[expr_] := Module[{$context, $result},
+	$context = StringDelete["-"]@CreateUUID["OneBot`Utilities`Temporary$"]<>"`";
+	BeginPackage[$context, OneBot`Utilities`$ContextWhiteList];
+	Remove[$context~~__];
+	$result = expr;
+	EndPackage[];
+	$result
+]
+
+SetAttributes[OneBot`Utilities`EvaluateInTemporaryContext, HoldAllComplete]
 
 
 OneBot`Utilities`SafeEvaluate[expr_] := If[
@@ -19,22 +50,11 @@ OneBot`Utilities`SafeEvaluate[expr_] := If[
 SetAttributes[OneBot`Utilities`SafeEvaluate, HoldAllComplete]
 
 
-OneBot`Utilities`$SystemSymbols = First@*StringReplace[{StartOfString~~s__~~";"~~EndOfString :> False -> s, s__ :> True -> s}] /@ StringSplit[
-	Import["SystemSymbol.wl", "String"]
-, "\r\n"|"\n"] //Merge[Identity];
-
-
-{OneBot`Utilities`$SystemWhiteList, OneBot`Utilities`$SystemBlackList} = OneBot`Utilities`$SystemSymbols /@ {True, False};
-
-
-OneBot`Utilities`$ContextWhiteList = {};
-
-
-OneBot`Utilities`SafeSymbolQ[sym_Symbol] := Catch@StackBegin@If[OneBot`Utilities`ValueQWithAutoLoad@sym,
+OneBot`Utilities`SafeSymbolQ[sym_Symbol] := If[OneBot`Utilities`ValueQWithAutoLoad@sym,
 	False,
-	If[MemberQ[OneBot`Utilities`$ContextWhiteList]@Context@sym,
+	If[MemberQ[Context@sym]@OneBot`Utilities`$ContextWhiteList || MemberQ[sym]@OneBot`Utilities`$UserSymbolWhiteList,
 		True,
-		If[Context@sym === "System`",
+		If[Context@sym === "System`" || StringMatchQ["OneBot`Utilities`Temporary$"~~__]@Context@sym,
 			MemberQ[SymbolName@Unevaluated@sym]@OneBot`Utilities`$SystemWhiteList,
 			False
 		]
@@ -67,14 +87,6 @@ OneBot`Utilities`ValueQWithAutoLoad[sym_] := If[ValueQ[sym],
 ]
 
 SetAttributes[OneBot`Utilities`ValueQWithAutoLoad, HoldAllComplete]
-
-
-OneBot`Utilities`SafeToExpression[expr_] := ToExpression[expr, InputForm, OneBot`Utilities`SafeEvaluate];
-
-
-OneBot`Utilities`AbsorbAbort[expr_] := CheckAbort[expr, $Aborted]
-
-SetAttributes[OneBot`Utilities`AbsorbAbort, HoldAllComplete]
 
 
 OneBot`Utilities`ConstrainedEvaluate[expr_] := MemoryConstrained[
