@@ -29,12 +29,9 @@ OneBot`Utilities`SafeToExpression[str_] := OneBot`Utilities`EvaluateInTemporaryC
 , $Aborted];
 
 
-OneBot`Utilities`EvaluateInTemporaryContext[expr_] := Module[{$context},
-	$context = StringDelete["-"]@CreateUUID["OneBot`Utilities`Temporary$"]<>"`";
-	Block[{$Context = $context, $ContextPath = Prepend["System`"]@OneBot`Utilities`$ContextWhiteList},
-		Remove/@Names[$context<>"*"];
-		expr
-	]
+OneBot`Utilities`EvaluateInTemporaryContext[expr_] := Block[{$Context = "Global`", $ContextPath = Prepend["System`"]@OneBot`Utilities`$ContextWhiteList},
+	Remove@"Global`*";
+	expr
 ]
 
 SetAttributes[OneBot`Utilities`EvaluateInTemporaryContext, HoldAllComplete]
