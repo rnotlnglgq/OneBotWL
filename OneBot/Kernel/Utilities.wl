@@ -7,7 +7,7 @@ $ThreadMemoryLimit = 1*^8;
 $ThreadTimeLimit = 10;
 
 
-$ContextWhiteList = {};
+$ContextWhiteList = {"Global`"};
 
 
 $SystemSymbols = First@*StringReplace[{StartOfString~~s__~~";"~~EndOfString :> False -> s, s__ :> True -> s}] /@ StringSplit[
@@ -50,12 +50,9 @@ OneBot`Utilities`SafeSymbolQ[sym_Symbol] := If[OneBot`Utilities`ValueQWithAutoLo
 	False,
 	If[MemberQ[Context@sym]@OneBot`Utilities`$ContextWhiteList || MemberQ[sym]@OneBot`Utilities`$UserSymbolWhiteList,
 		True,
-		If[StringMatchQ["OneBot`Utilities`Temporary$"~~__]@Context@sym,
-			True,
-			If[Context@sym === "System`",
-				MemberQ[SymbolName@Unevaluated@sym]@OneBot`Utilities`$SystemWhiteList,
-				False
-			]
+		If[Context@sym === "System`",
+			MemberQ[SymbolName@Unevaluated@sym]@OneBot`Utilities`$SystemWhiteList,
+			False
 		]
 	]
 ];
