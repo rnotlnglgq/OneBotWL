@@ -94,6 +94,11 @@ OneBot`Utilities`ConstrainedEvaluate[expr_] := MemoryConstrained[
 SetAttributes[OneBot`Utilities`ConstrainedEvaluate, HoldAllComplete]
 
 
+OneBot`Utilities`CatenateTextMessage[msg_List] := SequenceReplace[msg,
+	s:{<|"data" -> <|"text" -> _|>, "type" -> "text"|>..} :> <|"data" -> <|"text" -> StringJoin[#[["data", "text"]]&/@s]|>, "type" -> "text"|>
+]
+
+
 End[]
 
 

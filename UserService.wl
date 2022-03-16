@@ -12,6 +12,7 @@ ClearAll["`*"]
 PrivateHandler
 
 
+ApplyHandler
 QuickReplyResponse
 $NoActionResponse
 
@@ -37,7 +38,7 @@ OneBot`Utilities`$UserSymbolWhiteList = {MaTeX`MaTeX};
 ClearAll["`*"]
 
 
-$debug = True;
+`$DebugLevel = 1;
 
 
 (* ::Section:: *)
@@ -112,10 +113,13 @@ IntEvaluate[message_] := CallInt @@ OneBot`Utilities`SafeToExpression /@ StringC
 		"int"~~Whitespace~~expr__~~Whitespace~~var:Except[WhitespaceCharacter]..~~WhitespaceCharacter...~~EndOfString :> {expr, var}
 	, 1][[1]] //Switch[#,
 	_Graphics,
+		If[`$DebugLevel > 0, Print@"IntEvaluate: Rasterizing"];
 		MessageTemplate["img"]@Rasterize[#, ImageResolution -> 200],
 	$Failed,
+		If[`$DebugLevel > 0, Print@"IntEvaluate: MaTeXFailure"];
 		MessageTemplate["text"]@Failure["MaTeXFailure", <||>],
 	_,
+		If[`$DebugLevel > 0, Print@"IntEvaluate: UnexpectedFailure"];
 		MessageTemplate["text"]@Failure["UnexpectedFailure", <||>]
 ]& //OneBot`Utilities`ConstrainedEvaluate
 
@@ -123,20 +127,26 @@ IntEvaluate[message_] := CallInt @@ OneBot`Utilities`SafeToExpression /@ StringC
 FigureEvaluate[message_] := First@StringCases[message[[-1]]["data", "text"], "fig"~~Whitespace~~e__~~WhitespaceCharacter...~~EndOfString :> e, 1] \
 	//OneBot`Utilities`SafeToExpression //Switch[#,
 	_Graphics|_Graphics3D|_Image,
+		If[`$DebugLevel > 0, Print@"FigureEvaluate: Rasterizing"];
 		MessageTemplate["img"]@Rasterize[#, ImageResolution -> 200],
 	_Failure,
+		If[`$DebugLevel > 0, Print@"FigureEvaluate: Failure"];
 		MessageTemplate["text"]@#,
 	_,
+		If[`$DebugLevel > 0, Print@"FigureEvaluate: Unexpected failure"];
 		MessageTemplate["text"]@Failure["NotAFigure", <|"Content" -> ToString[#, InputForm]|>]
 ]& //OneBot`Utilities`ConstrainedEvaluate
 
 
 TeXEvaluate[message_] := Switch[#,
 	_Graphics,
+		If[`$DebugLevel > 0, Print@"TeXEvaluate: Rasterizing"];
 		MessageTemplate["img"]@Rasterize[#, ImageResolution -> 200],
 	$Failed,
+		If[`$DebugLevel > 0, Print@"TeXEvaluate: MaTeXFailure"];
 		MessageTemplate["text"]@Failure["MaTeXFailure", <||>],
 	_,
+		If[`$DebugLevel > 0, Print@"TeXEvaluate: UnexpectedFailure"];
 		MessageTemplate["text"]@Failure["UnexpectedFailure", <||>]
 ]&@MaTeX`MaTeX[
 	First@StringCases[message[[-1]]["data", "text"], "tex"~~Whitespace~~e__~~WhitespaceCharacter...~~EndOfString :> e, 1]
@@ -149,7 +159,7 @@ help: \:663e\:793a\:5e2e\:52a9
 wl expr_: \:8ba1\:7b97Wolfram\:8bed\:8a00\:8868\:8fbe\:5f0fexpr
 int expr_ sym_: \:5bf9Wolfram\:8bed\:8a00\:8868\:8fbe\:5f0fexpr\:5173\:4e8eWolfram\:8bed\:8a00\:7b26\:53f7sym\:6c42\:53cd\:5bfc\:6570
 tex formula_: \:6e32\:67d3TeX\:516c\:5f0fformula
-fig expr_: allow image output.
+fig expr_: \:5141\:8bb8\:56fe\:50cf\:8f93\:51fa
 
 \:6ce8\:610f\:4e8b\:9879\:ff1a
 1. Wolfram\:8bed\:8a00\:8868\:8fbe\:5f0f\:4e0d\:652f\:6301\:81ea\:7136\:8bed\:8a00\:8f93\:5165\:548c\:6709\:6b67\:4e49\:7684TraditionalForm\:3002
@@ -169,12 +179,24 @@ fig expr_: allow image output.
 (*Handler*)
 
 
+ApplyHandler[handler_, sourceMsg_] := handler@sourceMsg//Function[
+	Switch[`$DebugLevel,
+		1,
+			Print["ApplyHandler: ", handler, sourceMsg],
+		2,
+			Print["ApplyHandler: ", handler, sourceMsg];
+			Print["Result: ", #]
+	];
+	#
+]
+
+
 QuickReplyResponse[handler_, sourceMsg_] := ExportString[GenerateHTTPResponse@HTTPResponse[
-	ExportForm[{"reply" -> handler@sourceMsg}, "JSON", "Compact" -> True]
-, <|"StatusCode" -> 200|>], "HTTPResponse"]
+		ExportForm[{"reply" -> ApplyHandler[handler, sourceMsg]}, "JSON", "Compact" -> True]
+	, <|"StatusCode" -> 200|>], "HTTPResponse"]
 
 QuickReplyResponse[handler_, sourceMsg_, sourceMsgID_] := ExportString[GenerateHTTPResponse@HTTPResponse[
-	ExportForm[{"reply" -> {MessageTemplate["reply"]@sourceMsgID, handler@sourceMsg}}, "JSON", "Compact" -> True]
+	ExportForm[{"reply" -> {MessageTemplate["reply"]@sourceMsgID, ApplyHandler[handler, sourceMsg]}}, "JSON", "Compact" -> True]
 , <|"StatusCode" -> 200|>], "HTTPResponse"]
 
 
@@ -191,7 +213,7 @@ PrivateHandler[assoc_] := Module[{receive, messageType, message, messageID, self
 		"RawJSON"
 	, CharacterEncoding -> "UTF8"];
 	{messageType, message, messageID, selfID, senderID} = receive/@{"message_type", "message", "message_id", "self_id", "user_id"};
-	response = Switch[{messageType, message, senderID},
+	response = Switch[{messageType, OneBot`Utilities`CatenateTextMessage@message, senderID},
 		{"private", {MessagePattern["help"]}},
 			QuickReplyResponse[$HelpMessage&, message],
 		{"private", {MessagePattern["admin"]}, $Administrator},
@@ -206,7 +228,7 @@ PrivateHandler[assoc_] := Module[{receive, messageType, message, messageID, self
 			QuickReplyResponse[FigureEvaluate, message],
 		{"group", {MessagePattern["at"]@selfID, MessagePattern["help"]}, _},
 			QuickReplyResponse[$HelpMessage&, message],
-		{"group", {MessagePattern["at"]@selfID, MessagePattern["admin"]}, _},
+		{"group", {MessagePattern["at"]@selfID, MessagePattern["admin"]}, $Administrator},
 			QuickReplyResponse[AdminEvaluate, message, messageID],
 		{"group", {MessagePattern["at"]@selfID, MessagePattern["wl"]}, _},
 			QuickReplyResponse[WLEvaluate, message, messageID],
@@ -214,13 +236,19 @@ PrivateHandler[assoc_] := Module[{receive, messageType, message, messageID, self
 			QuickReplyResponse[TeXEvaluate, message, messageID],
 		{"group", {MessagePattern["at"]@selfID, MessagePattern["int"]}, _},
 			QuickReplyResponse[IntEvaluate, message, messageID],
-		{"group", {MessagePattern["at"]@selfID, MessagePattern["fig"]}, $Administrator},
+		{"group", {MessagePattern["at"]@selfID, MessagePattern["fig"]}, _},
 			QuickReplyResponse[FigureEvaluate, message, messageID],
 		_,
+			If[$DebugLevel > 1, Print@"No action"];
 			$NoActionResponse
 	];
-	If[TrueQ@`$debug,
-		Print@ToString[message, InputForm]
+	Switch[$DebugLevel,
+		1,
+			Print["Writing response for: ", ToString[message, OutputForm], "\n"],
+		2,
+			Print["Writing response for: ", ToString[message, InputForm], "\n"],
+		_,
+			Print["Writing response\n"]
 	];
 	WriteString[#SourceSocket, response];
 	Close@#SourceSocket;
