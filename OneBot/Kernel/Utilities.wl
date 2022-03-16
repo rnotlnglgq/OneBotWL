@@ -95,10 +95,17 @@ SetAttributes[OneBot`Utilities`ConstrainedEvaluate, HoldAllComplete]
 
 
 OneBot`Utilities`CatenateTextMessage[msg_List] := SequenceReplace[msg,
-	s:{<|"data" -> <|"text" -> _|>, "type" -> "text"|>..} :> (
-		If[$DebugLevel > 1, Print["CatenateTextMessage: Catenating ", msg]];
-		<|"data" -> <|"text" -> StringJoin[#[["data", "text"]]&/@s]|>, "type" -> "text"|>
-	)
+	s:{<|"data" -> <|"text" -> _|>, "type" -> "text"|>..} :> Function[
+		Switch[$DebugLevel,
+			0,
+				Print["CatenateTextMessage: Catenating "],
+			1,
+				Print["CatenateTextMessage: Catenating ", msg],
+			2,
+				Print["CatenateTextMessage: Catenating ", msg];
+				Print["Result: ", #]
+		]; #
+	]@<|"data" -> <|"text" -> StringJoin[#[["data", "text"]]&/@s]|>, "type" -> "text"|>
 ]
 
 

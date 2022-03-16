@@ -210,7 +210,8 @@ PrivateHandler[assoc_] := Module[{receive, messageType, message, messageID, self
 		"RawJSON"
 	, CharacterEncoding -> "UTF8"];
 	{messageType, message, messageID, selfID, senderID} = receive/@{"message_type", "message", "message_id", "self_id", "user_id"};
-	response = Switch[{messageType, OneBot`Utilities`CatenateTextMessage@message, senderID},
+	message = OneBot`Utilities`CatenateTextMessage@message;
+	response = Switch[{messageType, message, senderID},
 		{"private", {MessagePattern["help"]}},
 			QuickReplyResponse[$HelpMessage&, message],
 		{"private", {MessagePattern["admin"]}, $Administrator},
