@@ -38,9 +38,6 @@ OneBot`Utilities`$UserSymbolWhiteList = {MaTeX`MaTeX};
 ClearAll["`*"]
 
 
-`$DebugLevel = 1;
-
-
 (* ::Section:: *)
 (*Dispatch*)
 
@@ -113,13 +110,13 @@ IntEvaluate[message_] := CallInt @@ OneBot`Utilities`SafeToExpression /@ StringC
 		"int"~~Whitespace~~expr__~~Whitespace~~var:Except[WhitespaceCharacter]..~~WhitespaceCharacter...~~EndOfString :> {expr, var}
 	, 1][[1]] //Switch[#,
 	_Graphics,
-		If[`$DebugLevel > 0, Print@"IntEvaluate: Rasterizing"];
+		If[$DebugLevel > 0, Print@"IntEvaluate: Rasterizing"];
 		MessageTemplate["img"]@Rasterize[#, ImageResolution -> 200],
 	$Failed,
-		If[`$DebugLevel > 0, Print@"IntEvaluate: MaTeXFailure"];
+		If[$DebugLevel > 0, Print@"IntEvaluate: MaTeXFailure"];
 		MessageTemplate["text"]@Failure["MaTeXFailure", <||>],
 	_,
-		If[`$DebugLevel > 0, Print@"IntEvaluate: UnexpectedFailure"];
+		If[$DebugLevel > 0, Print@"IntEvaluate: UnexpectedFailure"];
 		MessageTemplate["text"]@Failure["UnexpectedFailure", <||>]
 ]& //OneBot`Utilities`ConstrainedEvaluate
 
@@ -127,26 +124,26 @@ IntEvaluate[message_] := CallInt @@ OneBot`Utilities`SafeToExpression /@ StringC
 FigureEvaluate[message_] := First@StringCases[message[[-1]]["data", "text"], "fig"~~Whitespace~~e__~~WhitespaceCharacter...~~EndOfString :> e, 1] \
 	//OneBot`Utilities`SafeToExpression //Switch[#,
 	_Graphics|_Graphics3D|_Image,
-		If[`$DebugLevel > 0, Print@"FigureEvaluate: Rasterizing"];
+		If[$DebugLevel > 0, Print@"FigureEvaluate: Rasterizing"];
 		MessageTemplate["img"]@Rasterize[#, ImageResolution -> 200],
 	_Failure,
-		If[`$DebugLevel > 0, Print@"FigureEvaluate: Failure"];
+		If[$DebugLevel > 0, Print@"FigureEvaluate: Failure"];
 		MessageTemplate["text"]@#,
 	_,
-		If[`$DebugLevel > 0, Print@"FigureEvaluate: Unexpected failure"];
+		If[$DebugLevel > 0, Print@"FigureEvaluate: Unexpected failure"];
 		MessageTemplate["text"]@Failure["NotAFigure", <|"Content" -> ToString[#, InputForm]|>]
 ]& //OneBot`Utilities`ConstrainedEvaluate
 
 
 TeXEvaluate[message_] := Switch[#,
 	_Graphics,
-		If[`$DebugLevel > 0, Print@"TeXEvaluate: Rasterizing"];
+		If[$DebugLevel > 0, Print@"TeXEvaluate: Rasterizing"];
 		MessageTemplate["img"]@Rasterize[#, ImageResolution -> 200],
 	$Failed,
-		If[`$DebugLevel > 0, Print@"TeXEvaluate: MaTeXFailure"];
+		If[$DebugLevel > 0, Print@"TeXEvaluate: MaTeXFailure"];
 		MessageTemplate["text"]@Failure["MaTeXFailure", <||>],
 	_,
-		If[`$DebugLevel > 0, Print@"TeXEvaluate: UnexpectedFailure"];
+		If[$DebugLevel > 0, Print@"TeXEvaluate: UnexpectedFailure"];
 		MessageTemplate["text"]@Failure["UnexpectedFailure", <||>]
 ]&@MaTeX`MaTeX[
 	First@StringCases[message[[-1]]["data", "text"], "tex"~~Whitespace~~e__~~WhitespaceCharacter...~~EndOfString :> e, 1]
@@ -180,7 +177,7 @@ fig expr_: \:5141\:8bb8\:56fe\:50cf\:8f93\:51fa
 
 
 ApplyHandler[handler_, sourceMsg_] := handler@sourceMsg//Function[
-	Switch[`$DebugLevel,
+	Switch[$DebugLevel,
 		1,
 			Print["ApplyHandler: ", handler, sourceMsg],
 		2,

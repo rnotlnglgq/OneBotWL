@@ -10,6 +10,9 @@ BeginPackage["OneBot`", {"GeneralUtilities`", "ZeroMQLink`", "CURLLink`"}]
 ClearAll["`*"]
 
 
+$DebugLevel = 1;
+
+
 $Listener
 $MainHandler
 
