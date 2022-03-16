@@ -30,14 +30,14 @@ FigureEvaluate
 Begin["`Private`"]
 
 
-$debug = True;
-
-
 OneBot`Utilities`$ContextWhiteList = {"Global`", "Rubi`"};
 OneBot`Utilities`$UserSymbolWhiteList = {MaTeX`MaTeX};
 
 
 ClearAll["`*"]
+
+
+$debug = True;
 
 
 (* ::Section:: *)
@@ -179,6 +179,10 @@ QuickReplyResponse[handler_, sourceMsg_, sourceMsgID_] := ExportString[GenerateH
 
 
 $NoActionResponse = ExportString[HTTPResponse["", <|"StatusCode" -> 204|>], "HTTPResponse"];
+
+
+(* ::Text:: *)
+(*To do: catenate adjacent message sections which are all of type "text".*)
 
 
 PrivateHandler[assoc_] := Module[{receive, messageType, message, messageID, selfID, senderID, response},
