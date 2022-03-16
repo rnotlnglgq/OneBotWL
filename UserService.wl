@@ -22,6 +22,7 @@ $Administrator
 
 AdminEvaluate
 WLEvaluate
+StringEvaluate
 TeXEvaluate
 CallInt
 IntEvaluate
@@ -51,6 +52,12 @@ OneBot`$MainHandler = PrivateHandler;
 
 MessagePattern["help"] = <|
 	"data" -> <|"text" -> s_String /; StringMatchQ[WhitespaceCharacter...~~"help"~~WhitespaceCharacter...]@s|>,
+	"type" -> "text"
+|>;
+
+
+MessagePattern["log"] = <|
+	"data" -> <|"text" -> s_String /; StringMatchQ[WhitespaceCharacter...~~"log"~~Whitespace~~__]@s|>,
 	"type" -> "text"
 |>;
 
@@ -89,9 +96,26 @@ MessagePattern["fig"] = <|
 (*Function*)
 
 
+(* ::Text:: *)
+(*To do: judge whether a message will run out of size.*)
+
+
 AdminEvaluate[message_] := MessageTemplate["text"]@ToString[
 	ToExpression@First@StringCases[message[[-1]]["data", "text"], "admin"~~Whitespace~~e__~~WhitespaceCharacter...~~EndOfString :> e, 1]
 , InputForm]
+
+
+LogEvaluate[message_] := First@StringCases[message[[-1]]["data", "text"],
+	"wl"~~Whitespace~~e__~~WhitespaceCharacter...~~EndOfString :> e
+, 1] //Switch[#,
+	_?StringQ,
+		#,
+	_,
+		Switch[$DebugLevel,
+			2, Print["StringEvaluate: ", #," is not a string"], 
+			_, Print@"StringEvaluate: Not a string"
+		]; Failure["StringFailure", <||>]
+]& //MessageTemplate["text"]
 
 
 WLEvaluate[message_] := MessageTemplate["text"]@ToString[
@@ -200,10 +224,6 @@ QuickReplyResponse[handler_, sourceMsg_, sourceMsgID_] := ExportString[GenerateH
 $NoActionResponse = ExportString[HTTPResponse["", <|"StatusCode" -> 204|>], "HTTPResponse"];
 
 
-(* ::Text:: *)
-(*To do: catenate adjacent message sections which are all of type "text".*)
-
-
 PrivateHandler[assoc_] := Module[{receive, messageType, message, messageID, selfID, senderID, response},
 	receive = ImportByteArray[
 		ImportByteArray[#DataByteArray,"HTTPRequest"]@"BodyByteArray",
@@ -216,6 +236,8 @@ PrivateHandler[assoc_] := Module[{receive, messageType, message, messageID, self
 			QuickReplyResponse[$HelpMessage&, message],
 		{"private", {MessagePattern["admin"]}, $Administrator},
 			QuickReplyResponse[AdminEvaluate, message],
+		{"private", {MessagePattern["log"]}, $Administrator},
+			QuickReplyResponse[LogEvaluate, message],
 		{"private", {MessagePattern["wl"]}, _},
 			QuickReplyResponse[WLEvaluate, message],
 		{"private", {MessagePattern["tex"]}, _},
@@ -228,6 +250,8 @@ PrivateHandler[assoc_] := Module[{receive, messageType, message, messageID, self
 			QuickReplyResponse[$HelpMessage&, message],
 		{"group", {MessagePattern["at"]@selfID, MessagePattern["admin"]}, $Administrator},
 			QuickReplyResponse[AdminEvaluate, message, messageID],
+		{"group", {MessagePattern["at"]@selfID, MessagePattern["log"]}, $Administrator},
+			QuickReplyResponse[LogEvaluate, message, messageID],
 		{"group", {MessagePattern["at"]@selfID, MessagePattern["wl"]}, _},
 			QuickReplyResponse[WLEvaluate, message, messageID],
 		{"group", {MessagePattern["at"]@selfID, MessagePattern["tex"]}, _},
