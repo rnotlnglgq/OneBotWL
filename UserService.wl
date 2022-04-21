@@ -105,8 +105,8 @@ AdminEvaluate[message_] := MessageTemplate["text"]@ToString[
 , InputForm]
 
 
-LogEvaluate[message_] := First@StringCases[message[[-1]]["data", "text"],
-	"wl"~~Whitespace~~e__~~WhitespaceCharacter...~~EndOfString :> e
+LogEvaluate[message_] := ToExpression@First@StringCases[message[[-1]]["data", "text"],
+	"log"~~Whitespace~~e__~~WhitespaceCharacter...~~EndOfString :> e
 , 1] //Switch[#,
 	_?StringQ,
 		#,
@@ -189,7 +189,7 @@ fig expr_: \:5141\:8bb8\:56fe\:50cf\:8f93\:51fa
 
 \:793a\:4f8b\:6d88\:606f\:ff1a
 @XXX help
-@XXX wl 
+@XXX wl 1+1
 @XXX int 1/(1+x^6) x
 @XXX tex \\frac{2}{3}
 @XXX fig Graphics@Circle[]
