@@ -39,7 +39,7 @@ SetAttributes[OneBot`Utilities`EvaluateInTemporaryContext, HoldAllComplete]
 
 
 OneBot`Utilities`SafeEvaluate[expr_] := If[
-	FreeQ[HoldComplete@expr, _Symbol?(Not@*OneBot`Utilities`SafeSymbolQ), {1, Infinity}],
+	FreeQ[HoldComplete@expr, Except[_?OneBot`Utilities`SafeSymbolQ, _Symbol], {1, Infinity}],
 	expr,
 	Failure["Unsafe", <||>]
 ];
@@ -48,7 +48,7 @@ SetAttributes[OneBot`Utilities`SafeEvaluate, HoldAllComplete]
 
 
 OneBot`Utilities`SafeSymbolQ[sym_Symbol] := If[OneBot`Utilities`ValueQWithAutoLoad@sym,
-	MemberQ[SymbolName@sym]@$SystemValuedSymbolsWhiteList,
+	MemberQ[SymbolName@Unevaluated@sym]@OneBot`Utilities`$SystemValuedSymbolsWhiteList,
 	If[MemberQ[Context@sym]@OneBot`Utilities`$ContextWhiteList || MemberQ[sym]@OneBot`Utilities`$UserSymbolWhiteList,
 		True,
 		If[Context@sym === "System`",
