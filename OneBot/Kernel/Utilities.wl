@@ -18,7 +18,8 @@ $SystemSymbols = First@*StringReplace[{StartOfString~~s__~~";"~~EndOfString :> F
 {$SystemWhiteList, $SystemBlackList} = OneBot`Utilities`$SystemSymbols /@ {True, False};
 
 
-OneBot`Utilities`$UserSymbolWhiteList = {};
+$SystemValuedSymbolsWhiteList = Import["SystemValuedSymbol.wl", {"Package", "ExpressionList"}];
+(* (they are strings) *)
 
 
 Begin["`Private`"]
@@ -47,7 +48,7 @@ SetAttributes[OneBot`Utilities`SafeEvaluate, HoldAllComplete]
 
 
 OneBot`Utilities`SafeSymbolQ[sym_Symbol] := If[OneBot`Utilities`ValueQWithAutoLoad@sym,
-	False,
+	MemberQ[SymbolName@sym]@$SystemValuedSymbolsWhiteList,
 	If[MemberQ[Context@sym]@OneBot`Utilities`$ContextWhiteList || MemberQ[sym]@OneBot`Utilities`$UserSymbolWhiteList,
 		True,
 		If[Context@sym === "System`",
@@ -66,18 +67,21 @@ SetAttributes[OneBot`Utilities`SafeSymbolQ, HoldAllComplete]
 
 
 OneBot`Utilities`ValueQWithAutoLoad[sym_] := If[ValueQ[sym],
-	FirstCase[
-		OwnValues[sym],
-		HoldPattern[
-			Verbatim[RuleDelayed][
-				Verbatim[HoldPattern][sym],
-				Alternatives[
-					Verbatim[Condition][System`Dump`AutoLoad[Verbatim[Hold][_],Verbatim[Hold][_],_String], System`Dump`TestLoad],
-					Verbatim[Package`ActivateLoad][sym, {__Symbol}, _String, _]
+	If[SubsetQ[Attributes@sym, {Locked, ReadProtected}],
+		True,
+		FirstCase[
+			OwnValues[sym],
+			HoldPattern[
+				Verbatim[RuleDelayed][
+					Verbatim[HoldPattern][sym],
+					Alternatives[
+						Verbatim[Condition][System`Dump`AutoLoad[Verbatim[Hold][_],Verbatim[Hold][__],_String], System`Dump`TestLoad],
+						Verbatim[Package`ActivateLoad][sym, {__Symbol}, _String, _]
+					]
 				]
-			]
-		] :> (sym;ValueQ@sym),
-		True
+			] :> (sym;ValueQ@sym),
+			True
+		]
 	],
 	False
 ]
